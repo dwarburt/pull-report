@@ -49,6 +49,9 @@ var getItems = function (opts, callback) {
         .object()
         .value();
 
+      if (opts.repo != null) {
+        results.repos = results.repos.filter( repo => repo.name == opts.repo )
+      }
       // Iterate repositories
       async.each(results.repos, function (repo, repoCb) {
         // Iterate type of item to request.
@@ -56,6 +59,7 @@ var getItems = function (opts, callback) {
           // Type: Pull Requests
           function (typeCb) {
             if (!opts.pullRequests) { return typeCb(); }
+            
 
             github.pullRequests.getAll({
               user: opts.org,
@@ -63,6 +67,7 @@ var getItems = function (opts, callback) {
               state: opts.state,
               per_page: 100 // eslint-disable-line camelcase
             }, function (err, items) {
+              console.log(`Got ${items && items.length} issues for: ${opts.org}/${repo.name} in state ${opts.state}`);
               if (items && items.length) {
                 delete items.meta;
                 repos[repo.name].items = items;
@@ -269,6 +274,7 @@ var pullReport = function (opts, callback) {
       users: opts.user,
       state: opts.state,
       host: opts.host,
+      repo: opts.repo,
       includeURL: opts.prUrl || opts.html
     }, cb);
   }, callback);
@@ -308,6 +314,7 @@ if (require.main === module) {
     .option("--gh-token <token>", "GitHub token", null)
     .option("--pr-url", "Add pull request or issue URL to output", false)
     .option("--repo-type <type>", "Repo type (default: all|member|private)", "all")
+    .option("--repo <repo name>", "Return only the named repository", null)
     .option("--issue-type [types]",
       "Comma-separated list of issue types (default: pull-request|issue)", list)
     .parse(process.argv);
